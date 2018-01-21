@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>De-deidentification of Patient Notes</title>
+</head>
+<body>
+
+
+<script src ="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js"></script>
+<script> </script>
+<form action="{{ url_for('submitText') }}" method="post">
+    <textarea name="input_text" rows = "15" cols ="45"></textarea>
+    <br>
+    <input type="submit" value="Submit">
+</form>
+
+</body>
+</html>
