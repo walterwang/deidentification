@@ -33,6 +33,7 @@ import spacy
 import pickle
 import re
 import unidecode
+import os
 
 
 def get_token_indices(token_lists):
@@ -123,6 +124,7 @@ def run_client(sample_text):
 
     total_prediction_labels = []
     results = []
+    deid_words=[]
     with open("resources/prediction_index_to_label.pkl", 'rb') as f:
         index_to_label = pickle.load(f)
     label_vector = np.load("resources/input_label_indices_vector.npy")
@@ -168,20 +170,27 @@ def run_client(sample_text):
         results.append(zip(tokens[i], prediction_labels))
 
         total_prediction_labels.append(prediction_labels)
-    return total_prediction_labels, results
 
+    return total_prediction_labels, results, sentences
 
-if __name__ == '__main__':
-    # sample_text = "Silver Ridge Internal Medicine OROZCO KYLE"
-    sample_text = "hello my name is Málaga Wang, the name of my family doctor is Dr. Cho"
-
-    predictions, results= run_client(sample_text)
+def run_on_textfile(filename):
+    f = open(filename, 'r')
+    sample_text = f.read()
+    f.close()
+    predictions, results, sentences= run_client(sample_text)
     highlighted_words = []
     for i in range(len(results)):
         for j in range(len(results[i])):
             if results[i][j][1] != "O":
-                highlighted_words.append(results[i][j][0])
+                highlighted_words.append((results[i][j][1],sentences[i][j]['start'],sentences[i][j]['end']))
 
-    print(results)
-    print(highlighted_words)
+    for phi in reversed(highlighted_words):
+        sample_text = "".join((sample_text[:phi[1]]," {{%s}} "%phi[0], sample_text[phi[2]+1:]))
+    result_path =os.path.join("results_folder","deid_%s"%filename.split('/')[-1])
+    with open(result_path, 'w') as results_file:
+        results_file.write(sample_text)
+    return result_path
+if __name__ == '__main__':
+
+    run_on_textfile('uploaded_folder/texts.txt')
 

@@ -1,0 +1,6 @@
+
+	
+No copy is created, the elements are reversed on the fly while traversing! This is an important feature of all these iteration functions (which all end on “ed”) {{B-DOCTOR}}  {{E-DOCTOR}}  {{B-DATE}}  {{I-DATE}}  {{I-DATE}} {{E-DATE}} 9 '09 at 19:10
+6 	 
+	
+@Greg Hewgill No, it's an iterator over the original, no copy is created! � {{B-DATE}}  {{I-DATE}}  {{I-DATE}} {{E-DATE}} eb 9 '09 at 19:14 
