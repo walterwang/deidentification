@@ -3,22 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <title>De-deidentification of Patient Notes</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/style.css') }}">
+
 </head>
 <body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+<script type="text/javascript" src="{{ url_for('static', filename = 'js/script.js') }}"></script>
+
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+
+<div class="container">
 
 
-<script src ="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/mark.min.js"></script>
-<script> </script>
-<form action="{{ url_for('submitText') }}" method="post">
-    <textarea name="input_text" rows = "15" cols ="45"></textarea>
-    <br>
-    <input type="submit" value="Submit">
-</form>
+	<div class="row">
 
-<form method=POST enctype=multipart/form-data action="{{ url_for('upload_files') }}">
-    <input type = "file" name = "text" multiple>
-    <input type = "submit" value = "Submit Files">
-</form>
+		<div class="col-md-12">
 
+			<div class="panel panel-default">
+
+                <div class="panel-heading">
+
+                    <span class="panel-title">
+
+						<div class="pull-left">
+							<ul class="nav nav-tabs">
+								<li class="active"><a href="#tab1primary" data-toggle="tab"><i class="glyphicon glyphicon-upload"></i> Submit Files</a></li>
+								<li><a href="#tab2primary" data-toggle="tab"><i class="glyphicon glyphicon-pencil"></i> Submit Text</a></li>
+							</ul>
+						</div>
+
+                            <div class="btn-group pull-right">
+                                 <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                    <i class="glyphicon glyphicon-cog"></i>
+                                    Options
+                                </button>
+                                <ul class="dropdown-menu" style="width:300px; padding:0px;">
+
+										<li>
+											    <form class="form-horizontal" id="preferences" action="" method="post" accept-charset="utf-8">
+
+												    <div class="panel panel-default" id="preferences" style="margin:0px;">
+
+        													<div class="panel-heading">
+        														<span class="glyphicon glyphicon-wrench"></span>
+        														<span class="panel-label">User Preferences</span>
+        													</div>
+
+									    <div class="panel-body">
+
+    										<div class="form-group">
+												<label for="text_size" class="col-lg-6 control-label">
+												IOB tags
+												</label>
+												<div class="col-lg-6">
+													<div class="btn-group" data-toggle="buttons"  style="margin:0px padding:0px;">
+														<label class="btn btn-default toggle-button" style="pull-left margin:0px padding:0px; width:50%" id="display_bio_show">
+															<input type="radio" id="inlineradio1" name="display_label" value="True">
+															Show
+														</label>
+														<label class="btn btn-default toggle-button active" style="pull-right margin:0px padding:0px; width:50%" id="display_bio_hide">
+															<input type="radio" id="inlineradio2" name="display_label" value="False" checked>
+															Hide
+														</label>
+													</div>
+												</div>
+											</div>
+										</div>
+													<div class="panel-footer">
+														<div class="form-group">
+															<div class="col-lg-9">
+															  <button type="button" class="btn btn-primary" style="width:80px;" onclick="resetbtnstate()" >Reset</button>
+															</div>
+														</div>
+													</div>
+
+												</div>
+											</form>
+										</li>
+									</ul>
+                                    <div class="btn-group">
+                                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                	<i class="glyphicon glyphicon-th-list"></i> Help
+                                  <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu pull-right" style="width:300px; padding:0px;">
+									<li class="dropdown-header">Instructions</li>
+									<li>1. "Submit files" tab: Select one or multiple text files to be deidentified.
+										Click submit, once finished, a zip file will be available for download. </li>
+									<li>2. "Submit Text" tab: Once finished, results will appear on the right. </li>
+
+									<li class="dropdown-header">Options</li>
+                                  <li> 1. IOB tagging: show word boundaries, B-begin, I-In, O-Out
+                                  </li>
+                                  <li class="divider"></li>
+									<li class="dropdown-header">Post issues at: </li>
+                                  <a class="dropdown-item" href="https://github.com/walterwang/deidentification">https://github.com/walterwang/deidentification</a>
+
+
+                                </ul>
+                              </div>
+
+                            </div>
+
+						<div class="clearfix"></div>
+
+					</span>
+
+				</div>
+
+                <div class="panel-body">
+                        <div class="tab-content">
+                          <div class="tab-pane fade in active" id="tab1primary">
+
+                            <form id="upload-file" method="post" enctype=multipart/form-data>
+                                <div class = "col-md-3">
+
+                                <input type="file" name="text" id="document-file" multiple>
+                                </div>
+                                <div class = "col-md-3">
+                                <input type="submit" id = "btnupload" value="De-id Files">
+                                </div>
+								<div id="file_status"></div>
+
+                            </form>
+
+                            </div>
+                          <div class="tab-pane fade" id="tab2primary">
+
+                              <div class ="col-md-4 col-lg-4 col-sm-6">
+                              <form id="target">
+                                <textarea name="input_text" style='background-color: #E5E4E2;' rows="5"
+                                          cols="30"></textarea>
+                                <br>
+                                <input type="submit" id= "submit_text_button" value="Submit">
+                              </form>
+                                </div>
+                              <div class = "col-md-4 col-lg-4 col-sm-6">
+							  <span id="result"></span>
+                              </div>
+
+                          </div>
+                    	</div>
+                </div>
+
+            </div>
+
+		</div>
+
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    var $SCRIPT_ROOT = {{request.script_root|tojson|safe}};
+</script>
 </body>
 </html>

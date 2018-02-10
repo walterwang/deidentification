@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 # Copyright 2016 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,9 +26,8 @@ import tensorflow as tf
 import numpy as np
 from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_service_pb2
-tf.app.flags.DEFINE_string('server', 'localhost:9001',
-                           'PredictionService host:port')
-FLAGS = tf.app.flags.FLAGS
+# tf.app.flags.DEFINE_string('server', 'localhost:9001', 'PredictionService host:port')
+# FLAGS = tf.app.flags.FLAGS
 import spacy
 import pickle
 import re
@@ -67,7 +66,6 @@ def get_token_indices(token_lists):
                     char_token.append(character_to_index[char])
                 else:
                     char_token.append(0)
-
             for _ in range(max_token_length - len(token)):
                 char_token.append(0)
             char_index_seq.append(char_token)
@@ -102,34 +100,31 @@ def get_sentences_and_tokens_from_spacy(text):
         sentence_lists =[]
         token_length = []
         for token in sentence:
-
             token_dict = {}
-
             token_dict['start'], token_dict['end'] = get_start_and_end_offset_of_token_from_spacy(token)
             token_dict['text'] = text[token_dict['start']:token_dict['end']]
-
-
             if token_dict['text'].strip() in ['\n', '\t', ' ', '']:
                 continue
 
-            sentence_lists.append(token_dict['text']) #sentence lists
+            sentence_lists.append(token_dict['text'])  # sentence lists
             token_length.append(len(token_dict['text']))
             sentence_tokens.append(token_dict)
         sentences.append(sentence_tokens)
         token_lenght_list.append(token_length)
-        token_lists.append(sentence_lists) #token_lists
+        token_lists.append(sentence_lists)  # token_lists
     return sentences, token_lists, token_lenght_list
 
-def run_client(sample_text):
 
+def run_client(sample_text):
     total_prediction_labels = []
     results = []
-    deid_words=[]
     with open("resources/prediction_index_to_label.pkl", 'rb') as f:
         index_to_label = pickle.load(f)
     label_vector = np.load("resources/input_label_indices_vector.npy")
     dropout_keep_prob = np.load('resources/dropout_keep_prob.npy')
-    host, port = FLAGS.server.split(':')
+    # host, port = FLAGS.server.split(':')
+    host = 'localhost'
+    port = 9001
     channel = implementations.insecure_channel(host, int(port))
     stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
 
@@ -165,32 +160,44 @@ def run_client(sample_text):
         unary = np.asarray(map(float, unary)).reshape(input_length, 95)
         predictions, _ = tf.contrib.crf.viterbi_decode(unary, transitions)
         predictions = predictions[1:-1]
-        # print("crf predictions", predictions)
         prediction_labels = [index_to_label[prediction].encode('utf-8') for prediction in predictions]
         results.append(zip(tokens[i], prediction_labels))
-
         total_prediction_labels.append(prediction_labels)
 
     return total_prediction_labels, results, sentences
 
-def run_on_textfile(filename):
-    f = open(filename, 'r')
-    sample_text = f.read()
-    f.close()
+
+def run_on_text(sample_text, show_bio=False):
     predictions, results, sentences= run_client(sample_text)
     highlighted_words = []
+    sample_text = sample_text.decode('utf8')
+
     for i in range(len(results)):
         for j in range(len(results[i])):
             if results[i][j][1] != "O":
                 highlighted_words.append((results[i][j][1],sentences[i][j]['start'],sentences[i][j]['end']))
 
     for phi in reversed(highlighted_words):
-        sample_text = "".join((sample_text[:phi[1]]," {{%s}} "%phi[0], sample_text[phi[2]+1:]))
+        if not show_bio:
+            label_name =phi[0].split("-")[-1]
+        else:
+            label_name = phi[0]
+        sample_text = "".join((sample_text[:phi[1]],"{%s}"%label_name, sample_text[phi[2]:]))
+
+    return sample_text
+
+
+def run_on_textfile(filename, show_bio=False):
+    f = open(filename, 'r')
+    sample_text = f.read()
+    f.close()
+    deided_text = run_on_text(sample_text, show_bio)
     result_path =os.path.join("results_folder","deid_%s"%filename.split('/')[-1])
     with open(result_path, 'w') as results_file:
-        results_file.write(sample_text)
+        results_file.write(deided_text.encode('utf-8'))
     return result_path
-if __name__ == '__main__':
 
-    run_on_textfile('uploaded_folder/texts.txt')
+if __name__ == '__main__':
+    run_on_textfile('uploaded_folder/texts_copy.txt', show_bio=False)
+
 

@@ -1,6 +1,1 @@
-
-	
-No copy is created, the elements are reversed on the fly while traversing! This is an important feature of all these iteration functions (which all end on “ed”). – Konrad Rudolph Feb 9 '09 at 19:10
-6 	 
-	
-@Greg Hewgill No, it's an iterator over the original, no copy is created! – André Feb 9 '09 at 19:14 
+Grand Duchess Olga Alexandrovna of Russia (1882–1960) was the youngest child of Emperor Alexander III of Russia and younger sister of Emperor Nicholas II. Her father died when she was 12, and her brother Nicholas became emperor. At 19 she married Duke Peter Alexandrovich of Oldenburg; their marriage was unconsummated and was annulled by the Emperor in October 1916. The following month Olga married cavalry officer Nikolai Kulikovsky, with whom she had fallen in love several years before. During the First World War, the Grand Duchess served as an army nurse at the front and was awarded a medal for personal gallantry. At the downfall of the Romanovs in the Russian Revolution of 1917, she fled to the Crimea with her husband and children, where they lived under the threat of assassination. After her brother and his family were shot by revolutionaries, she and her family escaped to Denmark in February 1920. In exile, she was often sought out by Romanov impostors who claimed to be her dead relatives. In 1948, feeling threatened by Joseph Stalin's regime, she emigrated with her immediate family to Ontario, Canada. (Full article...)
