@@ -34,38 +34,47 @@ import re
 import unidecode
 import os
 
+# load resources:
+
+spacy_nlp = spacy.load('en')
+with open("resources/token_to_index.pkl", 'rb') as f:
+    token_to_index = pickle.load(f)
+with open("resources/character_to_index.pkl", 'rb') as f:
+    character_to_index = pickle.load(f)
+with open("resources/prediction_index_to_label.pkl", 'rb') as f:
+    index_to_label = pickle.load(f)
 
 def get_token_indices(token_lists):
-    with open("resources/token_to_index.pkl", 'rb') as f:
-        token_to_index = pickle.load(f)
-    with open("resources/character_to_index.pkl", 'rb') as f:
-        character_to_index = pickle.load(f)
 
     glove_index_data = []
     char_index_data = []
     for i in range(len(token_lists)):
-
         glove_index_seq = []
         char_index_seq = []
 
         max_token_length = len(max(token_lists[i], key=len))
+
         for token in token_lists[i]:
             char_token = []
-            if token in token_to_index.keys():
+
+            if token in token_to_index:
                 glove_index_seq.append(token_to_index[token])
-            elif token.lower() in token_to_index.keys():
+
+            elif token.lower() in token_to_index:
                 glove_index_seq.append(token_to_index[token.lower()])
-            elif re.sub('\d', '0', token) in token_to_index.keys():
+
+            elif re.sub('\d', '0', token) in token_to_index:
                 glove_index_seq.append(token_to_index[re.sub('\d', '0', token)])
-            elif re.sub('\d', '0', token.lower()) in token_to_index.keys():
+            elif re.sub('\d', '0', token.lower()) in token_to_index:
                 glove_index_seq.append(token_to_index[re.sub('\d', '0', token.lower())])
-            else:  # unknown indices #edited glove vector file with the last line 400001 (index=400000) being the unkonwn vector
+            else:  # unknown indices, edited glove vector file with the last line 400001 (index=400000) being the unknown vector
                 glove_index_seq.append(400000)
             for char in token:
                 if char in character_to_index:
                     char_token.append(character_to_index[char])
                 else:
                     char_token.append(0)
+
             for _ in range(max_token_length - len(token)):
                 char_token.append(0)
             char_index_seq.append(char_token)
@@ -77,20 +86,20 @@ def get_token_indices(token_lists):
 
 
 def get_start_and_end_offset_of_token_from_spacy(token):
+    """ returns the beginning index and the ending index of a token """
     start = token.idx
-
     end = start + len(token)
     return start, end
 
 def get_sentences_and_tokens_from_spacy(text):
+    """ Input: entire text, returns sentences, token_lists (list of sentences with list of tokens), length of each token. """
 
-    spacy_nlp = spacy.load('en')
     document = spacy_nlp(text.decode('utf-8'))
 
     text = unidecode.unidecode(text.decode('utf-8'))
     sentences = []
     token_lists = []
-    token_lenght_list = []
+    token_length_list = []
 
     for span in document.sents:
 
@@ -110,33 +119,41 @@ def get_sentences_and_tokens_from_spacy(text):
             token_length.append(len(token_dict['text']))
             sentence_tokens.append(token_dict)
         sentences.append(sentence_tokens)
-        token_lenght_list.append(token_length)
+        token_length_list.append(token_length)
         token_lists.append(sentence_lists)  # token_lists
-    return sentences, token_lists, token_lenght_list
 
+    return sentences, token_lists, token_length_list
 
+# Take sample text, create inputs for tensorflow serving
 def run_client(sample_text):
+
+    """
+    returns prediction labels: predictions as a list of sentences of list of tokens,
+            sentences: formed from spacy,
+            results: pairs of prediction label and token
+    """
     total_prediction_labels = []
     results = []
-    with open("resources/prediction_index_to_label.pkl", 'rb') as f:
-        index_to_label = pickle.load(f)
+
     label_vector = np.load("resources/input_label_indices_vector.npy")
     dropout_keep_prob = np.load('resources/dropout_keep_prob.npy')
     # host, port = FLAGS.server.split(':')
+
+
     host = 'localhost'
     port = 9001
     channel = implementations.insecure_channel(host, int(port))
     stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
-
-    # Send request
-    # See prediction_service.proto for gRPC request/response details.
     request = predict_pb2.PredictRequest()
     request.model_spec.name = 'bilstm'
     request.model_spec.signature_name = 'predict_ner'
+
+
     sentences, tokens, token_lenght_list = get_sentences_and_tokens_from_spacy(
         sample_text)
 
     glove_index_data, char_index_data = get_token_indices(tokens)
+
 
     for i in range(len(glove_index_data)):
 
@@ -147,7 +164,7 @@ def run_client(sample_text):
         request.inputs['token_indices'].CopyFrom(tf.contrib.util.make_tensor_proto(glove_index_data[i]))
         request.inputs['label_indices_vector'].CopyFrom(
             tf.contrib.util.make_tensor_proto(label_vector, dtype=tf.float32))
-
+        # Feed to grpc
         result = stub.Predict(request, 10.0)
 
         transitions, unary = result.__str__().split("unary")
@@ -168,6 +185,9 @@ def run_client(sample_text):
 
 
 def run_on_text(sample_text, show_bio=False):
+    """ arg: show_bio is the beginning, end tag of NER
+        returns the deid texts
+     """
     predictions, results, sentences= run_client(sample_text)
     highlighted_words = []
     sample_text = sample_text.decode('utf8')
@@ -192,12 +212,12 @@ def run_on_textfile(filename, show_bio=False):
     sample_text = f.read()
     f.close()
     deided_text = run_on_text(sample_text, show_bio)
-    result_path =os.path.join("results_folder","deid_%s"%filename.split('/')[-1])
+    result_path = os.path.join("results_folder","deid_%s"%filename.split('/')[-1])
     with open(result_path, 'w') as results_file:
         results_file.write(deided_text.encode('utf-8'))
     return result_path
 
 if __name__ == '__main__':
-    run_on_textfile('uploaded_folder/texts_copy.txt', show_bio=False)
+    run_on_textfile('uploaded_folder/testing.txt', show_bio=False)
 
 

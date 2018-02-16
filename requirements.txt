@@ -1,0 +1,9 @@
+tensorflow_serving_api==1.4.0
+Flask==0.12.2
+grpcio==1.7.0
+Unidecode==1.0.22
+tensorflow==1.4.1
+Werkzeug==0.12.2
+spacy==1.10.0
+numpy==1.13.3
+grpc==0.3-19
