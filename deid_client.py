@@ -46,6 +46,7 @@ with open("resources/prediction_index_to_label.pkl", 'rb') as f:
 
 def get_token_indices(token_lists):
 
+
     glove_index_data = []
     char_index_data = []
     for i in range(len(token_lists)):
